@@ -12,15 +12,16 @@ w = logspace(0,3);
 [MAG_w1,PHASE_w1] = bode(w1, w);
 [MAG_w3,PHASE_w3] = bode(w3, w);
 
-% soma_mag = [];
-% for i=1:length(MAG_w1)
-%     soma_mag(i) = 20*log( 1/abs(MAG_w1(i)) + 1/abs(MAG_w3(i)) );
-% end
-% semilogx(w, soma_mag);
-%     grid
-%     title('Restrição para funções de ponderação');
-%     xlabel('w [rad/s]');
-%     ylabel('[1/db]');
+figure(1)
+soma_mag = [];
+for i=1:length(MAG_w1)
+    soma_mag(i) = 20*log( 1/abs(MAG_w1(i)) + 1/abs(MAG_w3(i)) );
+end
+semilogx(w, soma_mag);
+    grid
+    title('Restrição para funções de ponderação');
+    xlabel('w [rad/s]');
+    ylabel('[1/db]');
 
 % declarar a planta
 ng = 400;
@@ -46,8 +47,17 @@ P = augtf(sysg, w1, w2, w3);
 
 contralador = tf(numk, denk)
 
-run('model_with_disturbance.slx');
-run('model_without_disturbance.slx');
+figure(2)
+K = tf(numk,denk);
+T = tf((K*tf(ng, dg))/(1+K*tf(ng, dg)));
+S = tf(1/(1+K*tf(ng, dg)));
+R = tf(K*S);
+hold on
+bode(w1*S); % Sensibilidade
+bode(w3*T); % Sensibilidade Complementar
+
+% run('model_with_disturbance.slx');
+% run('model_without_disturbance.slx');
 
 s = zpk('s'); % Laplace variable s
 MS = 2; AS = .03; WS = 5;
@@ -62,10 +72,10 @@ I = eye(size(L1));
 S1 = feedback(I,L1); % S=inv(I+L1);
 T1 = I-S1;
 
+figure(3);
 step(T1,1.5);
 title('\alpha and \theta command step responses');
 
-figure;
 sigma(I+L1,'--',T1,':',L1,'r--',W1/GAM1,'k--',GAM1/W3,'k-.',{.1,100})
 legend('1/\sigma(S) performance','\sigma(T) robustness','\sigma(L) loopshape',...
        '\sigma(W1) performance bound','\sigma(1/W3) robustness bound')
