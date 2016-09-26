@@ -1,0 +1,58 @@
+% declarar as funções de ponderação
+
+s = tf('s');
+
+w1 = 100*(0.005*s + 1)^2 / (0.2*s+1)^2
+w2 = tf();
+w3 = s^2 / 40000;
+
+% Teste da Restrição:
+
+% declara o range de frequencias analizado
+% w = logspace(0,3);
+% gera os graficos de magnitude e fase das funções de ponderação
+w = logspace(0,3);
+[MAG_w1,PHASE_w1] = bode(w1, w);
+[MAG_w3,PHASE_w3] = bode(w3, w);
+
+soma_mag = [];
+for i=1:length(MAG_w1)
+    soma_mag(i) = 20*log( 1/abs(MAG_w1(i)) + 1/abs(MAG_w3(i)) );
+end
+semilogx(w, soma_mag);
+    grid
+    title('Restrição para fu');
+% magW1W3inv = [];
+% 
+% %gera um vetor com a soma dos inversos das magnitudes de W1 e W3 para as frequências especificadas pelo vetor w
+% for i=1:length(magW1);
+%     magW1W3inv(i) = [20*log(1/magW1(i)+1/magW3(i))];
+% end
+ 
+%plota esse vetor em função das freqências especificadas
+%semilogx(w,magW1W3inv)
+
+
+% declarar a planta
+ng = 400;
+dg = [1 2 400];
+
+% planta na representação espaço de estado
+[AG, BG, CG, DG] = tf2ss(ng, dg);
+
+% cria um sistema sysg
+sysg = mksys(AG, BG, CG, DG);
+
+% aumentar a planta
+P = augtf(sysg, w1, w2, w3);
+
+% calcular o controlador via hinf 
+[ssk, sstyu] = hinf(P);    % ssk é o controlador na forma de espaço de estado
+
+% a próxima linha vai extrair o modelo de estados de ssk
+[ak, bk, ck, dk] = branch(ssk);
+
+% controlador na forma de função de transferência
+[numk, denk] = ss2tf(ak, bk, ck, dk)
+
+run('block_diagram.slx');
